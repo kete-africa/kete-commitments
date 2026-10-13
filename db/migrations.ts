@@ -6,7 +6,7 @@ import { chatOutboxMigrationSql } from '@kete/notify';
 import { draftsMigrationSql } from '@kete/drafts';
 import { feedbackMigrationSql } from '@kete/feedback';
 import { outboxMigrationSql } from '@kete/sdk';
-import { tasksMigrationSql } from '@/features/tasks';
+import { contractsMigrationSql } from '@/features/contracts';
 
 export interface MigrationContext {
   schema: string;
@@ -35,7 +35,8 @@ export const migrations: Migration[] = [
         feedbackMigrationSql(context),
       ].join('\n'),
   },
-  { name: '0001_tasks', sql: (context) => tasksMigrationSql(context) },
+  // Contracts, their obligations, retentions and bonds, a funder's rules of spending (spec 001).
+  { name: '0001_contracts', sql: (context) => contractsMigrationSql(context) },
   // The journal keeps the chain of agents behind each gesture (doctrine D-039).
   { name: '0002_kete_delegation', sql: (context) => commandsDelegationMigrationSql(context) },
   // The business events to the center, in their own outbox (kete-core spec 049).

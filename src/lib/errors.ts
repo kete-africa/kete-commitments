@@ -9,8 +9,15 @@ export function sayError(code: string): string {
     not_allowed: m.errors_not_allowed,
     invalid_input: m.errors_invalid_input,
     not_found: m.errors_not_found,
+    contract_not_found: m.errors_contract_not_found,
+    obligation_not_found: m.errors_obligation_not_found,
+    security_not_found: m.errors_security_not_found,
     already_done: m.errors_already_done,
-    not_done: m.errors_not_done,
+    already_recovered: m.errors_already_recovered,
+    not_a_funding: m.errors_not_a_funding,
+    rule_incomplete: m.errors_rule_incomplete,
+    period_invalid: m.errors_period_invalid,
+    not_of_project: m.errors_not_of_project,
   };
   return (words[code] ?? m.errors_generic)();
 }

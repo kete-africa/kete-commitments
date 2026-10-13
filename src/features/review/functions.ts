@@ -1,17 +1,10 @@
 import type { DraftReview } from '@kete/capabilities';
-import { executeCommand } from '@kete/commands';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
-import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { transaction } from '@/platform/db';
 import { registry } from '@/platform/registry';
-import { holds } from '@/platform/rights';
 import { personOf } from '@/platform/session';
-import { perform, ScreenError, signedIn } from '@/platform/screen';
-import { reopenTask } from './commands/complete-task';
-import { findTask, listTasks } from './infrastructure/task.table';
-import { taskInput } from './task.record';
+import { signedIn } from '@/platform/screen';
 
 /** A draft as the verification screen shows it: plain, serializable values. */
 export interface ReviewScreen {
@@ -28,6 +21,18 @@ export interface ReviewScreen {
   }[];
 }
 
+/** A value as a person reads it: a document's lines one by one, never `[object Object]`. */
+function said(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (Array.isArray(value)) return value.map(said).join('\n');
+  if (typeof value === 'object') {
+    return Object.entries(value)
+      .map(([key, entry]) => `${key}: ${said(entry)}`)
+      .join(' · ');
+  }
+  return String(value);
+}
+
 function toScreen(review: DraftReview): ReviewScreen {
   const properties = (review.schema['properties'] ?? {}) as Record<string, { title?: string }>;
   return {
@@ -40,7 +45,7 @@ function toScreen(review: DraftReview): ReviewScreen {
       return {
         key,
         title: properties[key]?.title ?? key,
-        value: value === null || value === undefined ? '' : String(value),
+        value: said(value),
         source: provenance?.source ?? null,
         uncertain: provenance?.certainty === 'low',
       };
@@ -52,58 +57,6 @@ export const fetchPerson = createServerFn({ method: 'GET' }).handler(async () =>
   const identity = await personOf(getRequest());
   return identity ? { name: identity.name, organizationId: identity.organizationId } : null;
 });
-
-export const fetchTasks = createServerFn({ method: 'GET' }).handler(async () => {
-  const { caller, as } = await signedIn();
-  return as(async () => {
-    if (!holds('tasks:read')) throw new ScreenError('forbidden');
-    return transaction(caller.organizationId, (db) => listTasks(db));
-  });
-});
-
-export const fetchTask = createServerFn({ method: 'GET' })
-  .validator((input: unknown) => z.object({ taskId: z.string().min(1).max(64) }).parse(input))
-  .handler(async ({ data }) => {
-    const { caller, as } = await signedIn();
-    return as(async () => {
-      if (!holds('tasks:read')) throw new ScreenError('forbidden');
-      return transaction(caller.organizationId, (db) => findTask(db, data.taskId));
-    });
-  });
-
-/**
- * A person adds a task: the same capability an agent would only prepare a draft of. A refusal
- * or a broken rule comes back as its code, for the screen to word.
- */
-export const addTask = createServerFn({ method: 'POST' })
-  .validator((input: unknown) => taskInput.parse(input))
-  .handler(async ({ data }) => {
-    const outcome = await perform('tasks_create', data);
-    return outcome.ok ? { ok: true as const } : { ok: false as const, code: outcome.code };
-  });
-
-export const setTaskDone = createServerFn({ method: 'POST' })
-  .validator((input: unknown) =>
-    z.object({ taskId: z.string().min(1).max(64), done: z.boolean() }).parse(input),
-  )
-  .handler(async ({ data }) => {
-    const { caller, as } = await signedIn();
-    return as(async () => {
-      if (data.done) {
-        const outcome = await perform('tasks_complete', { taskId: data.taskId });
-        return outcome.ok ? { status: 'done' } : { status: 'refused', code: outcome.code };
-      }
-      if (!holds('tasks:write')) throw new ScreenError('forbidden');
-      await transaction(caller.organizationId, (db) =>
-        executeCommand(db, reopenTask, {
-          ...caller,
-          idempotencyKey: `screen-${randomUUID()}`,
-          input: { taskId: data.taskId },
-        }),
-      );
-      return { status: 'done' };
-    });
-  });
 
 /** A draft an agent prepared, as the person sees it before deciding. */
 export const fetchReview = createServerFn({ method: 'GET' })
