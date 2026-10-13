@@ -60,7 +60,7 @@ beforeAll(async () => {
     },
   });
   usePool(db.app);
-  await transaction(ORG, (client) => assignBusinessRole(client, ORG, essi.userId, 'staff'));
+  await transaction(ORG, (client) => assignBusinessRole(client, ORG, essi.userId, 'manager'));
 });
 
 afterAll(async () => {
@@ -75,7 +75,7 @@ describe('business roles', () => {
         registry.invoke({
           actor: screenActor(who),
           organizationId: ORG,
-          name: 'task_list',
+          name: 'contract_list',
           input: {},
         }),
       );
@@ -88,19 +88,21 @@ describe('a gesture on a screen', () => {
   it('returns the code of the rule it broke, never a crash', async () => {
     const caller = { actor: screenActor(owner), organizationId: ORG };
     const as = <T>(work: () => Promise<T>) => asPerson(owner, work);
-    const created = await performGesture<{ taskId: string }>(
+    const created = await performGesture<{ contractId: string }>(
       registry,
-      { ...caller, name: 'tasks_create', input: { title: 'Relancer le fournisseur' } },
+      { ...caller, name: 'contracts_write', input: { kind: 'client', reference: 'C-1', title: 'Entretien' } },
       as,
     );
     expect(created.ok).toBe(true);
-    const taskId = created.ok ? created.output.taskId : '';
+    const contractId = created.ok ? created.output.contractId : '';
+    // A client's contract has no rules of spending: the rule's code comes back, nothing thrown.
     expect(
-      await performGesture(registry, { ...caller, name: 'tasks_complete', input: { taskId } }, as),
-    ).toMatchObject({ ok: true });
-    expect(
-      await performGesture(registry, { ...caller, name: 'tasks_complete', input: { taskId } }, as),
-    ).toEqual({ ok: false, code: 'already_done', facts: {} });
+      await performGesture(
+        registry,
+        { ...caller, name: 'rules_add', input: { contractId, kind: 'single_ceiling', amount: 1, clause: 'x' } },
+        as,
+      ),
+    ).toEqual({ ok: false, code: 'not_a_funding', facts: {} });
   });
 });
 
@@ -130,7 +132,7 @@ describe('« Demander »', () => {
                     {
                       type: 'tool-call' as const,
                       toolCallId: 'c1',
-                      toolName: 'task_list',
+                      toolName: 'contract_list',
                       input: '{}',
                     },
                   ],
@@ -139,7 +141,7 @@ describe('« Demander »', () => {
                   warnings: [],
                 }
               : {
-                  content: [{ type: 'text' as const, text: 'Une tâche, faite.' }],
+                  content: [{ type: 'text' as const, text: 'Un contrat, en cours.' }],
                   finishReason: { unified: 'stop' as const, raw: 'stop' },
                   usage,
                   warnings: [],
@@ -149,15 +151,21 @@ describe('« Demander »', () => {
       }),
     );
     const outcome = await asPerson(owner, () =>
-      askApp({ userId: owner.userId, organizationId: ORG }, 'Où en sont les tâches ?'),
+      askApp({ userId: owner.userId, organizationId: ORG }, 'Où en sont les contrats ?'),
     );
     expect(outcome).toEqual({
       available: true,
-      answer: 'Une tâche, faite.',
-      sources: ['task_list'],
+      answer: 'Un contrat, en cours.',
+      sources: ['contract_list'],
     });
-    // Readings only: completing (acts at once) and creating (a draft) are never offered.
-    expect(offered[0]).toEqual(['task_list', 'task_get']);
+    // Readings only: writing a contract or a rule is never offered.
+    expect(offered[0]).toEqual([
+      'contract_list',
+      'contract_get',
+      'obligations_due',
+      'securities_to_recover',
+      'spending_check',
+    ]);
   });
 });
 
@@ -226,13 +234,13 @@ describe('WhatsApp and Telegram', () => {
 
 describe('usage', () => {
   it('counts each gesture, and announces the day’s counts to Kete Cockpit', async () => {
-    await recordUse(ORG, 'tasks_create', owner.userId);
+    await recordUse(ORG, 'contracts_write', owner.userId);
     await announceDailyUsage(new Date());
     const { rows } = await db.owner.query<{
       envelope: { type: string; data: { counters: Record<string, number> } };
     }>(`select envelope from kete_outbox where organization_id = $1`, [ORG]);
     expect(rows.map((row) => row.envelope.type)).toEqual(['metrics.daily']);
-    expect(rows[0]?.envelope.data.counters).toMatchObject({ usage_events: 1, use_tasks_create: 1 });
+    expect(rows[0]?.envelope.data.counters).toMatchObject({ usage_events: 1, use_contracts_write: 1 });
   });
 });
 

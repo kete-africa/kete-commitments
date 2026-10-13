@@ -21,6 +21,8 @@ export async function signedIn() {
   const token = await tokenOf(request);
   return {
     identity,
+    /** Her own token, kept on the server: what the center is asked with. */
+    token,
     caller: { actor: screenActor(identity), organizationId: identity.organizationId },
     /** Runs `work` with her rights: the center's grants, her business role, or her role's defaults. */
     as: <T>(work: () => T | Promise<T>) => asPerson(identity, work, token),

@@ -6,10 +6,11 @@ import {
   definePermissions,
 } from '@kete/capabilities';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { taskPermissions } from '@/features/tasks';
+import { commitmentsPermissions } from '@/features/contracts';
 import * as m from '@/paraglide/messages.js';
 import { getCenter } from './center';
 import { transaction } from './db';
+import { withPerson } from './person';
 import { words } from './words';
 
 /**
@@ -18,7 +19,7 @@ import { words } from './words';
  * grant them to roles and positions.
  */
 export const permissions = definePermissions([
-  ...taskPermissions,
+  ...commitmentsPermissions,
   // The organization's journal: who did what, agents included (@kete/admin).
   {
     name: 'journal:read',
@@ -29,11 +30,11 @@ export const permissions = definePermissions([
 ]);
 
 /**
- * The roles of the app's own trade (kete-core spec 093): a member holds what her business role
- * holds, as the owner ticked it — nothing without one. Replace `staff` by the roles of the trade
- * (a cashier, a washer) and name them in each permission's `businessRoles`.
+ * The roles of the trade (kete-core spec 093): a member holds what her business role holds, as
+ * the owner ticked it — nothing without one. Who keeps the contracts, and everyone who spends
+ * under them.
  */
-export const businessRoles = ['owner', 'staff'] as const;
+export const businessRoles = ['owner', 'manager', 'staff'] as const;
 
 const rights = createRights({
   permissions,
@@ -62,7 +63,10 @@ export async function asPerson<T>(
   token?: string | null,
 ): Promise<T> {
   const held = identity ? await rights.permissionsOf(identity, token) : new Set<string>();
-  return current.run({ identity, permissions: held }, work);
+  // Her token and her name, for what a gesture asks the center while it runs.
+  return current.run({ identity, permissions: held }, () =>
+    withPerson({ token, name: identity?.name }, work),
+  );
 }
 
 export function currentIdentity(): KeteIdentity | null {
