@@ -6,6 +6,7 @@ import { chatOutboxMigrationSql } from '@kete/notify';
 import { draftsMigrationSql } from '@kete/drafts';
 import { feedbackMigrationSql } from '@kete/feedback';
 import { outboxMigrationSql } from '@kete/sdk';
+import { settingsMigrationSql } from '@kete/settings';
 import { contractsMigrationSql } from '@/features/contracts';
 
 export interface MigrationContext {
@@ -56,4 +57,6 @@ export const migrations: Migration[] = [
   },
   // Who uses what, per organization (kete-core spec 091).
   { name: '0007_kete_usage', sql: (context) => usageMigrationSql(context) },
+  // The app's settings and their journal: the currency of contracts (spec 004).
+  { name: '0008_kete_settings', sql: (context) => settingsMigrationSql(context) },
 ];

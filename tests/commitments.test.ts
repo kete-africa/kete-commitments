@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import type { KeteIdentity } from '@kete/auth';
 import { assignBusinessRole, createHttpApi, performGesture, type Caller } from '@kete/capabilities';
 import { validateManifest } from '@kete/sdk';
+import { clearSetting, setSetting } from '@kete/settings';
 import { assertOrganizationIsolation, createTestSchema, type TestSchema } from '@kete/testing';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { migrations } from '../db/migrations';
@@ -12,6 +13,7 @@ import { manifest } from '../src/platform/events';
 import { datasets, registry } from '../src/platform/registry';
 import { asPerson } from '../src/platform/rights';
 import { screenActor } from '../src/platform/session';
+import { settingsRegistry } from '../src/platform/settings';
 
 // Spec 001 — Kete Commitments. The proof of step I1, on its side: « A funder's clause refuses a
 // purchase » — an app asks whether a project's funders allow an expense, and the answer cites the
@@ -411,5 +413,44 @@ describe('what the app says about itself', () => {
     const fr = JSON.parse(readFileSync(new URL('../messages/fr.json', import.meta.url), 'utf8'));
     const en = JSON.parse(readFileSync(new URL('../messages/en.json', import.meta.url), 'utf8'));
     expect(Object.keys(en).sort()).toEqual(Object.keys(fr).sort());
+  });
+});
+
+describe('the currency of contracts (spec 004)', () => {
+  it('is Kete’s setting for the organization, never an environment variable', async () => {
+    const currencyOf = async (contractId: string) =>
+      (
+        await db.owner.query<{ currency: string }>(
+          `select currency from ${db.schema}.contracts where contract_id = $1`,
+          [contractId],
+        )
+      ).rows[0]?.currency;
+    await transaction(ORG, (tx) =>
+      setSetting(tx, ORG, settingsRegistry, {
+        layer: 'app',
+        key: 'kete.currency',
+        value: 'EUR',
+        by: 'usr_ama',
+      }),
+    );
+    const written = done(
+      await gesture<{ contractId: string }>(lawson, 'contracts_write', {
+        kind: 'client',
+        reference: 'CTR-EUR-1',
+        title: 'Maintenance Paris',
+      }),
+    );
+    expect(await currencyOf(written.contractId)).toBe('EUR');
+    await transaction(ORG, (tx) =>
+      clearSetting(tx, ORG, { layer: 'app', key: 'kete.currency', by: 'usr_ama' }),
+    );
+    const next = done(
+      await gesture<{ contractId: string }>(lawson, 'contracts_write', {
+        kind: 'client',
+        reference: 'CTR-XOF-1',
+        title: 'Maintenance Lomé',
+      }),
+    );
+    expect(await currencyOf(next.contractId)).toBe('XOF');
   });
 });

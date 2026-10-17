@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
+import { currencyIn } from '@/platform/settings';
 import { getCenter } from '@/platform/center';
 import { transaction } from '@/platform/db';
 import { holds } from '@/platform/rights';
@@ -67,9 +68,10 @@ export const fetchContract = createServerFn({ method: 'GET' })
 
 /** What a new contract starts from: her open projects at the center, when there is one. */
 export const fetchContractForm = createServerFn({ method: 'GET' }).handler(() =>
-  reading(async (_organizationId, token) => {
+  reading(async (organizationId, token) => {
     const center = getCenter();
     return {
+      currency: await transaction(organizationId, (db) => currencyIn(db, organizationId)),
       connected: center.connected,
       projects: (await center.projects(token))
         .filter((project) => project.status === 'open')

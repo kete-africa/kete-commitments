@@ -16,8 +16,6 @@ export const Route = createFileRoute('/engagements/nouveau')({
   component: NewContractPage,
 });
 
-const CURRENCY = 'XOF';
-
 function NewContractPage() {
   const form = Route.useLoaderData();
   const navigate = useNavigate();
@@ -33,7 +31,7 @@ function NewContractPage() {
   const [endsOn, setEndsOn] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const value = amount.trim() ? typed(amount, CURRENCY) : undefined;
+  const value = amount.trim() ? typed(amount, form.currency) : undefined;
   const party = form.parties.find((one) => one.partyId === partyId);
   const ready = reference.trim() !== '' && title.trim() !== '' && value !== null;
 

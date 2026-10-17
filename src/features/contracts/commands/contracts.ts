@@ -1,4 +1,5 @@
 import { defineCommand } from '@kete/commands';
+import { currencyIn } from '@/platform/settings';
 import { z } from 'zod';
 import { announce } from '@/platform/announce';
 import { getCenter } from '@/platform/center';
@@ -26,8 +27,6 @@ import {
   securityRecovery,
 } from '../contract.record';
 
-/** The currency of the deployment's contracts (ISO 4217); F CFA by default. */
-const CURRENCY = (process.env.COMMITMENTS_CURRENCY ?? 'XOF').toUpperCase();
 const today = () => new Date().toISOString().slice(0, 10);
 
 /**
@@ -39,6 +38,8 @@ export const writeContract = defineCommand({
   input: contractInput,
   reversibility: { reversible: false },
   async handler(input, { db, organizationId, actor }) {
+    // The currency of contracts: Kete's setting for the organization (spec 004).
+    const currency = await currencyIn(db, organizationId);
     if (input.startsOn && input.endsOn && input.endsOn < input.startsOn) {
       throw new ContractRuleError('period_invalid');
     }
@@ -63,7 +64,7 @@ export const writeContract = defineCommand({
           : input.partyId
             ? { kind: 'party', id: input.partyId }
             : { kind: 'subject', id: `${PRODUCT}.contract` },
-        amount: { value: input.amount ?? 0, currency: CURRENCY },
+        amount: { value: input.amount ?? 0, currency },
       });
       if (verdict.effect === 'refuse') {
         throw new ContractRuleError('refused_by_policy', { why: sentencesOf(verdict) });
@@ -85,7 +86,7 @@ export const writeContract = defineCommand({
       projectId: input.projectId ?? null,
       projectName,
       amount: input.amount ?? null,
-      currency: CURRENCY,
+      currency,
       signedOn: input.signedOn ?? null,
       startsOn: input.startsOn ?? null,
       endsOn: input.endsOn ?? null,

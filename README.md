@@ -39,10 +39,13 @@ pnpm typecheck
 
 ## Settings
 
+The currency of contracts is Kete's setting `kete.currency` (kete-core specs 115 and 117): as
+Kete Commitments sets it for the organization, else as the organization set it in the Compte
+Kete, else F CFA (`XOF`).
+
 | Variable               | What it sets                                           |
 | ---------------------- | ------------------------------------------------------ |
 | `ENTERPRISE_API_URL`   | The center: projects and third parties                 |
-| `COMMITMENTS_CURRENCY` | The currency of contracts (ISO 4217); `XOF` by default |
 
 Other apps reach `spending_check` at `/api/v1/capabilities/spending_check` with the person's
 token; Kete Finance names this app's address in its `COMMITMENTS_API_URL`.
