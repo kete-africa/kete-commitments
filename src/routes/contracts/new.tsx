@@ -67,7 +67,7 @@ function NewContractPage() {
             },
           })
             .then(async (outcome) => {
-              if (!outcome.ok) return setError(sayError(outcome.code));
+              if (!outcome.ok) return setError(sayError(outcome.code, outcome.facts));
               await navigate({
                 to: '/engagements/$contractId',
                 params: { contractId: outcome.output.contractId },

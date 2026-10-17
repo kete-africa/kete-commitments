@@ -20,10 +20,15 @@ import {
   securityRecovery,
 } from './contract.record';
 
-const answer = <T>(outcome: { ok: true; output: T } | { ok: false; code: string }) =>
+type Facts = Record<string, string | number>;
+
+/** What the screen hears: the output, or the refusal's code with the facts its words name. */
+const answer = <T>(
+  outcome: { ok: true; output: T } | { ok: false; code: string; facts?: Facts },
+) =>
   outcome.ok
     ? { ok: true as const, output: outcome.output }
-    : { ok: false as const, code: outcome.code };
+    : { ok: false as const, code: outcome.code, facts: outcome.facts ?? {} };
 
 const today = () => new Date().toISOString().slice(0, 10);
 const inDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);

@@ -3,6 +3,7 @@
 | Step | Branch            | What it gives                                                                         | Proof                                     | State |
 | ---- | ----------------- | ------------------------------------------------------------------------------------- | ----------------------------------------- | ----- |
 | I1   | `001-commitments` | Contracts, obligations, retentions and bonds, a funder's rules, the check apps ask     | « A funder's clause refuses a purchase »  | Built |
+| A5   | `003-on-the-model` | Obligations and securities said to the center as holdings; a signature through the policies | « A policy at the center stops a signature here » | Built |
 | I2   | `002-reading`     | A contract's PDF read into obligations and rules, each with the passage it comes from  | « A rule read from a PDF cites its line » | Next  |
 
 Nothing here has been used by a real company yet. The repository is private and its pipeline does

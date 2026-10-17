@@ -2,7 +2,9 @@ import { defineCommand } from '@kete/commands';
 import { z } from 'zod';
 import { announce } from '@/platform/announce';
 import { getCenter } from '@/platform/center';
+import { PRODUCT } from '@/platform/app';
 import { actingFor, currentToken } from '@/platform/person';
+import { passGesture, sentencesOf } from '@/platform/policies';
 import { ContractRuleError } from '../domain/contracts';
 import {
   completeObligation,
@@ -49,6 +51,28 @@ export const writeContract = defineCommand({
         projectName = project.name;
       } else {
         projectName = input.projectName ?? input.projectId;
+      }
+    }
+    // A signed contract commits the organization: its policies decide who signs, at the center
+    // (kete-core spec 114) — the same for a person and her agent. Unruled, this app writes it.
+    if (input.signedOn) {
+      const verdict = await passGesture(currentToken(), actor, {
+        kind: 'contract.sign',
+        object: input.projectId
+          ? { kind: 'project', id: input.projectId }
+          : input.partyId
+            ? { kind: 'party', id: input.partyId }
+            : { kind: 'subject', id: `${PRODUCT}.contract` },
+        amount: { value: input.amount ?? 0, currency: CURRENCY },
+      });
+      if (verdict.effect === 'refuse') {
+        throw new ContractRuleError('refused_by_policy', { why: sentencesOf(verdict) });
+      }
+      if (verdict.effect === 'approve') {
+        throw new ContractRuleError('approval_required', {
+          who: verdict.approvers.map((a) => a.approver).join(', '),
+          why: sentencesOf(verdict),
+        });
       }
     }
     const contractId = await insertContract(db, {

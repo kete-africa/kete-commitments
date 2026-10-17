@@ -57,12 +57,15 @@ function ContractPage() {
       </AppShell>
     );
   }
-  const run = (work: () => Promise<{ ok: true } | { ok: false; code: string }>, then?: () => void) => {
+  const run = (
+    work: () => Promise<{ ok: true } | { ok: false; code: string; facts?: Record<string, string | number> }>,
+    then?: () => void,
+  ) => {
     setBusy(true);
     setError(null);
     void work()
       .then(async (outcome) => {
-        if (!outcome.ok) return setError(sayError(outcome.code));
+        if (!outcome.ok) return setError(sayError(outcome.code, outcome.facts));
         then?.();
         await router.invalidate();
       })

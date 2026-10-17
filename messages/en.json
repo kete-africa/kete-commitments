@@ -154,5 +154,10 @@
   "errors_not_a_funding": "Only a funder’s contract has rules of spending.",
   "errors_rule_incomplete": "The rule is not complete: the posts, the ceiling, the words, or the contract’s dates.",
   "errors_period_invalid": "The period does not fit: check the dates.",
-  "errors_not_of_project": "You may not see this project at the center."
+  "errors_not_of_project": "You may not see this project at the center.",
+  "errors_refused_by_policy": "The organization’s policies refuse this gesture: {why}",
+  "errors_approval_required": "This gesture needs an approval ({who}): {why}",
+  "holding_obligation_ours": "Keep the commitment « {label} » of contract {reference}",
+  "holding_obligation_theirs": "Get « {label} » ({reference}) from {party}",
+  "holding_security_release": "Recover the security of contract {reference}"
 }
