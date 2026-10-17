@@ -154,5 +154,10 @@
   "errors_not_a_funding": "Seul un contrat de bailleur a des règles de dépense.",
   "errors_rule_incomplete": "La règle n’est pas complète : les postes, le plafond, les mots, ou les dates du contrat.",
   "errors_period_invalid": "La période ne convient pas : vérifiez les dates.",
-  "errors_not_of_project": "Ce projet n’est pas visible pour vous au centre."
+  "errors_not_of_project": "Ce projet n’est pas visible pour vous au centre.",
+  "errors_refused_by_policy": "Les politiques de l’organisation refusent ce geste : {why}",
+  "errors_approval_required": "Ce geste demande un accord ({who}) : {why}",
+  "holding_obligation_ours": "Tenir l’engagement « {label} » du contrat {reference}",
+  "holding_obligation_theirs": "Obtenir « {label} » ({reference}) de {party}",
+  "holding_security_release": "Récupérer la garantie du contrat {reference}"
 }

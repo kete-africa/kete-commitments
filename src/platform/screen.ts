@@ -4,6 +4,7 @@ import { registry } from './registry';
 import { asPerson } from './rights';
 import { personOf, screenActor, tokenOf } from './session';
 import { recordUse } from './usage';
+import { sayHoldings } from './holdings';
 
 export class ScreenError extends Error {
   constructor(readonly code: 'signed_out' | 'no_organization' | 'forbidden' | 'not_found') {
@@ -46,6 +47,10 @@ export async function perform<T = unknown>(
     { ...caller, name, input, ...(idempotencyKey ? { idempotencyKey } : {}) },
     as,
   );
-  if (outcome.ok) await recordUse(caller.organizationId, name, identity.userId);
+  if (outcome.ok) {
+    await recordUse(caller.organizationId, name, identity.userId);
+    // The center hears at once what the app now holds (kete-core spec 114); never awaited.
+    void sayHoldings(caller.organizationId);
+  }
   return outcome;
 }

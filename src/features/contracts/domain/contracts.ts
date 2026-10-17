@@ -14,9 +14,12 @@ export class ContractRuleError extends RuleError {
       | 'not_a_funding'
       | 'rule_incomplete'
       | 'period_invalid'
-      | 'not_of_project',
+      | 'not_of_project'
+      | 'refused_by_policy'
+      | 'approval_required',
+    facts: Record<string, string | number> = {},
   ) {
-    super(code);
+    super(code, facts);
     this.name = 'ContractRuleError';
   }
 }

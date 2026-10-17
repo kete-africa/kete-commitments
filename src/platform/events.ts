@@ -99,6 +99,19 @@ export async function flushEvents(): Promise<void> {
 let appToken: (() => Promise<string | null>) | undefined;
 
 /**
+ * The app's own token for its center (`kete:center`): what it says its holdings with. Null without
+ * a center or a registration at the Compte Kete.
+ */
+export async function centerAppToken(): Promise<string | null> {
+  const accountUrl = process.env.KETE_ACCOUNT_URL;
+  const clientId = process.env.KETE_CLIENT_ID;
+  const clientSecret = process.env.KETE_CLIENT_SECRET;
+  if (!getCenter().connected || !accountUrl || !clientId || !clientSecret) return null;
+  appToken ??= createAppToken({ accountUrl, clientId, clientSecret, scope: 'kete:center' });
+  return appToken();
+}
+
+/**
  * Delivers the business events to the center once (the worker's job), with the app's own token
  * (`kete:center`, kete-core spec 049): no shared key. Without a center or a client, they wait.
  */

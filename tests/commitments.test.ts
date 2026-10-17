@@ -5,6 +5,7 @@ import { validateManifest } from '@kete/sdk';
 import { assertOrganizationIsolation, createTestSchema, type TestSchema } from '@kete/testing';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { migrations } from '../db/migrations';
+import { contractHoldings } from '../src/features/contracts';
 import { checkSpending, folded, toRecover } from '../src/features/contracts/domain/contracts';
 import { transaction, usePool } from '../src/platform/db';
 import { manifest } from '../src/platform/events';
@@ -53,8 +54,15 @@ const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISO
 const ids = {} as Record<'grant' | 'clinic', string>;
 
 // The center: the project is visible to who keeps the contracts.
+/** The organization's policies on a signature, at the center: none written until a test says. */
+let policy: ((gesture: Record<string, unknown>) => Record<string, unknown>) | null = null;
+
 function fakeCenter(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const path = String(input instanceof Request ? input.url : input).replace('https://api.center.test', '');
+  if (path === '/v1/apps/prd_kete_commitments/gestures' && policy) {
+    const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+    return Promise.resolve(Response.json({ verdict: policy(body) }));
+  }
   const token = new Headers(init?.headers).get('authorization') ?? '';
   if (path === `/v1/projects/${PROJECT}` && token.includes('usr_lawson')) {
     return Promise.resolve(
@@ -80,6 +88,7 @@ function fakeCenter(input: string | URL | Request, init?: RequestInit): Promise<
 
 beforeAll(async () => {
   process.env.ENTERPRISE_API_URL = 'https://api.center.test';
+  process.env.PUBLIC_URL = 'https://commitments.test';
   vi.stubGlobal('fetch', fakeCenter);
   db = await createTestSchema({
     migrate: async (owner, context) => {
@@ -326,6 +335,64 @@ describe('obligations, retentions and bonds', () => {
           [`ctr_${organizationId}`, organizationId],
         );
       },
+    });
+  });
+});
+
+describe('the living model (spec 003)', () => {
+  it('passes a signed contract through the organization’s policies', async () => {
+    const signed = {
+      kind: 'supplier',
+      reference: 'CTR-SOLARTECH-2026',
+      title: 'Fourniture d’onduleurs',
+      partyName: 'Solartech',
+      amount: 6_000_000,
+      signedOn: day(0),
+    };
+    let asked: Record<string, unknown> = {};
+    policy = (gesture) => {
+      asked = gesture;
+      return {
+        effect: 'approve',
+        policies: [{ id: 'signature.big', sentence: 'Au-delà de 5 000 000 F, le DG approuve' }],
+        approvers: [{ approver: 'position:pos_dg', people: ['usr_ama'] }],
+      };
+    };
+    expect(await gesture(lawson, 'contracts_write', signed)).toEqual({
+      ok: false,
+      code: 'approval_required',
+      facts: { who: 'position:pos_dg', why: 'Au-delà de 5 000 000 F, le DG approuve' },
+    });
+    expect(asked).toMatchObject({
+      kind: 'contract.sign',
+      object: { kind: 'subject', id: 'prd_kete_commitments.contract' },
+      amount: { value: 6_000_000, currency: 'XOF' },
+    });
+    policy = () => ({
+      effect: 'refuse',
+      policies: [{ id: 'signature.committee', sentence: 'Signent les membres du comité de direction' }],
+      approvers: [],
+    });
+    expect(await gesture(lawson, 'contracts_write', signed)).toMatchObject({
+      ok: false,
+      code: 'refused_by_policy',
+      facts: { why: 'Signent les membres du comité de direction' },
+    });
+    // Unsigned, it commits nothing yet: the policies are not asked.
+    const { signedOn: _signed, ...draft } = signed;
+    done(await gesture(lawson, 'contracts_write', { ...draft, reference: 'CTR-DRAFT' }));
+    policy = null;
+  });
+
+  it('says what is owed, by us or by them, and what is to recover, held by who wrote it', async () => {
+    const holdings = await transaction(ORG, (tx) => contractHoldings(tx));
+    expect(holdings.map((h) => h.kind).sort()).toEqual(
+      expect.arrayContaining(['obligation', 'security']),
+    );
+    const theirs = holdings.find((h) => h.what.includes('Paiement du deuxième acompte'));
+    expect(theirs).toMatchObject({
+      holder: { kind: 'person', id: 'usr_lawson' },
+      href: expect.stringMatching(/^https:\/\/commitments\.test\/engagements\//),
     });
   });
 });

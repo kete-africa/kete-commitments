@@ -6,4 +6,5 @@ export {
   commitmentsPermissions,
 } from './capabilities';
 export { contractsMigrationSql } from './infrastructure/contracts.table';
+export { contractHoldings } from './holdings';
 export type { Contract, ContractFile, Obligation, Security } from './contract.record';
