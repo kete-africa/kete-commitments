@@ -8,7 +8,9 @@ import { screenActor } from '@/platform/session';
 // The demonstration's data: the contracts of a small solar installer — a client's, a supplier's,
 // and a funder's agreement with its rules of spending. Written through the app's own gestures.
 
-export const DEMO_ORGANIZATION = 'org_demo_commitments';
+// Joined to a Compte Kete on this machine (kete-core's `pnpm platform`): its organization.
+const joined = process.env.KETE_DEMO_JOINED === 'on';
+export const DEMO_ORGANIZATION = (joined && process.env.KETE_DEMO_ORGANIZATION) || 'org_demo_commitments';
 
 const person = (userId: string, name: string, role: KeteIdentity['role']): KeteIdentity => ({
   userId,
@@ -22,7 +24,8 @@ const person = (userId: string, name: string, role: KeteIdentity['role']): KeteI
 });
 
 export const demoPeople = {
-  owner: person('usr_demo_afi', 'Afi Mensah', 'owner'),
+  // Joined: the person signed in through the Compte Kete is the owner.
+  owner: person((joined && process.env.KETE_DEMO_ME) || 'usr_demo_afi', 'Afi Mensah', 'owner'),
   manager: person('usr_demo_lawson', 'Mme Lawson', 'member'),
   staff: person('usr_demo_kossi', 'Kossi Adjo', 'member'),
 } as const;
