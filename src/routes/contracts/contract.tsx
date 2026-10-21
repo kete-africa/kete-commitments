@@ -42,7 +42,7 @@ const list = (text: string) =>
     .filter(Boolean);
 
 function ContractPage() {
-  const { contract, manage, today } = Route.useLoaderData();
+  const { contract, manage, today, threadHref } = Route.useLoaderData();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -82,6 +82,18 @@ function ContractPage() {
         title={`${contract.reference} — ${contract.title}`}
         status={<Tag tone="neutral">{kindLabel(contract.kind)}</Tag>}
         description={contract.partyName ?? undefined}
+        {...(threadHref
+          ? {
+              actions: (
+                <a
+                  href={threadHref}
+                  className="inline-flex h-(--control-height) items-center rounded-control border border-line-control px-3 text-body-sm font-semibold"
+                >
+                  {m.contract_thread()}
+                </a>
+              ),
+            }
+          : {})}
       />
       <div className="flex flex-col gap-6">
         <ErrorNote>{error}</ErrorNote>

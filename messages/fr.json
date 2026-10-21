@@ -159,5 +159,6 @@
   "errors_approval_required": "Ce geste demande un accord ({who}) : {why}",
   "holding_obligation_ours": "Tenir l’engagement « {label} » du contrat {reference}",
   "holding_obligation_theirs": "Obtenir « {label} » ({reference}) de {party}",
-  "holding_security_release": "Récupérer la garantie du contrat {reference}"
+  "holding_security_release": "Récupérer la garantie du contrat {reference}",
+  "contract_thread": "Fil du contrat"
 }
