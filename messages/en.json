@@ -159,5 +159,6 @@
   "errors_approval_required": "This gesture needs an approval ({who}): {why}",
   "holding_obligation_ours": "Keep the commitment « {label} » of contract {reference}",
   "holding_obligation_theirs": "Get « {label} » ({reference}) from {party}",
-  "holding_security_release": "Recover the security of contract {reference}"
+  "holding_security_release": "Recover the security of contract {reference}",
+  "contract_thread": "The contract’s thread"
 }

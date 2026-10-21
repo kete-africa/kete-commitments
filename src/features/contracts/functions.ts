@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { currencyIn } from '@/platform/settings';
 import { getCenter } from '@/platform/center';
+import { env } from '@/platform/env';
 import { transaction } from '@/platform/db';
 import { holds } from '@/platform/rights';
 import { perform, ScreenError, signedIn } from '@/platform/screen';
@@ -57,13 +58,26 @@ export const fetchCommitments = createServerFn({ method: 'GET' }).handler(() =>
 export const fetchContract = createServerFn({ method: 'GET' })
   .validator((input: unknown) => contractRef.parse(input))
   .handler(({ data }) =>
-    reading((organizationId) =>
-      transaction(organizationId, async (db) => ({
+    reading(async (organizationId, token) => {
+      const read = await transaction(organizationId, async (db) => ({
         today: today(),
         manage: holds('commitments:manage'),
         contract: await contractFile(db, data.contractId),
-      })),
-    ),
+      }));
+      const contract = read.contract;
+      // Its thread at the center, born the first time it is opened (Kete Enterprise spec 098).
+      const thread = contract
+        ? await getCenter().openObjectThread(token, {
+            kind: 'contract',
+            id: contract.contractId,
+            title: `${contract.reference} — ${contract.title}`.slice(0, 200),
+            href: `${env.publicUrl}/engagements/${contract.contractId}`,
+            ...(contract.partyId ? { party: contract.partyId } : {}),
+            ...(contract.projectId ? { project: contract.projectId } : {}),
+          })
+        : null;
+      return { ...read, threadHref: thread?.href ?? null };
+    }),
   );
 
 /** What a new contract starts from: her open projects at the center, when there is one. */
