@@ -7,4 +7,5 @@ export {
 } from './capabilities';
 export { contractsMigrationSql } from './infrastructure/contracts.table';
 export { contractHoldings } from './holdings';
+export { contractObjects } from './objects';
 export type { Contract, ContractFile, Obligation, Security } from './contract.record';

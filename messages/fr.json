@@ -160,5 +160,6 @@
   "holding_obligation_ours": "Tenir l’engagement « {label} » du contrat {reference}",
   "holding_obligation_theirs": "Obtenir « {label} » ({reference}) de {party}",
   "holding_security_release": "Récupérer la garantie du contrat {reference}",
+  "object_contract": "Contrat {reference} — {title}",
   "contract_thread": "Fil du contrat"
 }

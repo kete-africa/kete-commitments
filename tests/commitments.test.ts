@@ -1,12 +1,13 @@
 import { readFileSync } from 'node:fs';
 import type { KeteIdentity } from '@kete/auth';
 import { assignBusinessRole, createHttpApi, performGesture, type Caller } from '@kete/capabilities';
-import { validateManifest } from '@kete/sdk';
+import { objectBody } from '@kete/center';
+import { validateManifest, validateObject, validateObjectType } from '@kete/sdk';
 import { clearSetting, setSetting } from '@kete/settings';
 import { assertOrganizationIsolation, createTestSchema, type TestSchema } from '@kete/testing';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { migrations } from '../db/migrations';
-import { contractHoldings } from '../src/features/contracts';
+import { contractHoldings, contractObjects } from '../src/features/contracts';
 import { checkSpending, folded, toRecover } from '../src/features/contracts/domain/contracts';
 import { transaction, usePool } from '../src/platform/db';
 import { manifest } from '../src/platform/events';
@@ -396,6 +397,20 @@ describe('the living model (spec 003)', () => {
       holder: { kind: 'person', id: 'usr_lawson' },
       href: expect.stringMatching(/^https:\/\/commitments\.test\/engagements\//),
     });
+  });
+
+  it('says its contracts to the center’s index: unsigned or running, with who wrote them (spec 006)', async () => {
+    const kinds = manifest().objects ?? [];
+    expect(kinds.map((k) => k.kind)).toEqual(['contract']);
+    for (const kind of kinds) expect(validateObjectType(kind).ok).toBe(true);
+    const objects = await transaction(ORG, (tx) => contractObjects(tx));
+    expect(objects).toContainEqual(expect.objectContaining({ kind: 'contract', state: 'unsigned' }));
+    expect(objects).toContainEqual(
+      expect.objectContaining({ kind: 'contract', state: 'unsigned', personId: 'usr_lawson' }),
+    );
+    const states = kinds[0]?.states.map((x) => x.id) ?? [];
+    for (const object of objects) expect(states).toContain(object.state);
+    for (const object of objects) expect(validateObject(objectBody(object)).ok).toBe(true);
   });
 });
 
