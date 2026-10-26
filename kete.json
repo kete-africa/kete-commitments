@@ -20,5 +20,49 @@
       "purpose": "Answers questions with the readings the person may open (« Demander »), when a model is configured."
     },
     "criticality": "medium"
-  }
+  },
+  "objects": [
+    {
+      "kind": "contract",
+      "label": {
+        "fr": "Contrat",
+        "en": "Contract",
+        "fr_plural": "Contrats",
+        "en_plural": "Contracts"
+      },
+      "icon": "book",
+      "states": [
+        {
+          "id": "unsigned",
+          "label": {
+            "fr": "Non signé",
+            "en": "Unsigned"
+          },
+          "tone": "neutral"
+        },
+        {
+          "id": "running",
+          "label": {
+            "fr": "En cours",
+            "en": "Running"
+          },
+          "tone": "ok"
+        },
+        {
+          "id": "ended",
+          "label": {
+            "fr": "Échu",
+            "en": "Ended"
+          },
+          "tone": "neutral",
+          "closed": true
+        }
+      ],
+      "axes": [
+        "project",
+        "party",
+        "person"
+      ]
+    }
+  ]
 }
